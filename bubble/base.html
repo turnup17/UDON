@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D3 test</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <!-- Your chart will be rendered here -->
+    <div id="chart"></div>
+
+    <script>
+        // Set up your SVG canvas dimensions
+        const width = 800;
+        const height = 400;
+
+        // Create an SVG element
+        const svg = d3.select("#chart")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+        // Define a color scale based on "type"
+        const colorScale = d3.scaleOrdinal()
+            .domain(["proteins", "carbohydrates", "green and yellow vegetables", "light color vegetables"])
+            .range(["#FF8888", "#FFFF88", "#88FF88", "#8888FF"]); // Adjusted colors
+
+        // Load data from CSV file
+        d3.csv("data_basics.csv")
+            .then(function(data) {
+                // Convert the "value" column to a number
+                data.forEach(function(d) {
+                    d.value = +d.value;
+                });
+
+                // Create and update circles for your data
+                const circles = svg.selectAll("circle")
+                    .data(data)
+                    .enter()
+                    .append("circle")
+                    .attr("r", d => d.value + 10) // Increase the radius to fit the name
+                    .style("fill", d => colorScale(d.type)); // Use color scale
+
+                // Use a force simulation to position the circles
+                const simulation = d3.forceSimulation(data)
+                    .force("x", d3.forceX(d => width / 2))
+                    .force("y", d3.forceY(d => height / 2))
+                    .force("collide", d3.forceCollide().radius(d => d.value + 15)); // Adjust the separation
+
+                simulation.on("tick", function() {
+                    circles
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+
+                    // Update the label positions to be attached to the bubbles
+                    labels.attr("x", d => d.x)
+                        .attr("y", d => d.y);
+                });
+
+                // Add labels to the bubbles
+                const labels = svg.selectAll(".label")
+                    .data(data)
+                    .enter()
+                    .append("text")
+                    .attr("class", "label")
+                    .text(d => d.name)
+                    .style("text-anchor", "middle")
+                    .style("alignment-baseline", "middle")
+                    .style("font-size", "12px")
+                    .style("fill", "white"); // Set label text color to white
+
+                // Start the simulation
+                simulation.alpha(1).restart();
+            })
+            .catch(function(error) {
+                console.log("Error loading data:", error);
+            });
+    </script>
+</body>
+</html>
